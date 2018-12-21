@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Aira | IoT Project</title>
+        <link
+            rel="stylesheet"
+            href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+            integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+            crossorigin="anonymous"
+        />
+        <style>
+            #data {
+                text-align: center;
+                margin: 50px 20px 20px 20px;
+            }
+            #data-thr {
+                max-width: 300px;
+            }
+        </style>
+        <script src="https://cdn.netpie.io/microgear.js"></script>
+        <script
+            src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"
+        ></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+            integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+            crossorigin="anonymous"
+        ></script>
+        <script
+            src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
+            integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+            crossorigin="anonymous"
+        ></script>
+    </head>
+
+    <body>
+        <div id="header">
+            <nav class="navbar navbar-dark bg-dark">
+                <h2 class="text-white">Aira</h2>
+            </nav>
+        </div>
+        <div id="data">
+            <h2 class="data-text" id="connection">Waiting For Connection...</h2>
+            <h4 class="data-text" id="data-co" style="margin-top: 20px">
+                Waiting For Data...
+            </h4>
+            <h4 class="data-text" id="data-topic" style="margin-top: 20px">
+                Waiting For Data...
+            </h4>
+            <h4 class="data-text" id="data-status"></h4>
+            <div
+                class="input-group mb-3"
+                style="justify-content: center;margin-top:30px;"
+            >
+                <input
+                    type="text"
+                    class="form-control"
+                    id="data-thr"
+                    placeholder="Threshold"
+                />
+                <div class="input-group-append">
+                    <button
+                        class="btn btn-outline-secondary"
+                        type="button"
+                        id="data-button-thr"
+                    >
+                        Set Threshold
+                    </button>
+                </div>
+            </div>
+            <div class="progress" style="margin-top: 30px">
+                <div
+                    class="progress-bar progress-bar-striped progress-bar-animated"
+                    id="alert-bar"
+                    role="progressbar"
+                    style="width: 100%"
+                ></div>
+                <small
+                    class="justify-content-center d-flex position-absolute w-100"
+                    id="label-bar"
+                ></small>
+            </div>
+        </div>
+        <script>
+            const APPID = 'AiraCO'
+            const KEY = 'Il8fwPqTTXGGwcX'
+            const SECRET = '1qCT5qfG77cYEa6GAh6YkpzRl'
+            const ALIAS = 'HTML_web' //  ชื่อตัวเอง
+            const thing1 = 'NodeMCU1' //  ชื่อเพื่อนที่จะคุย
+            var thr = 1000
+            $('#data-button-thr').click(() => {
+                if (
+                    isNaN(parseInt($('#data-thr').val())) ||
+                    parseInt($('#data-thr').val()) <= 0
+                ) {
+                    thr = 1000
+                } else {
+                    thr = parseInt($('#data-thr').val())
+                }
+            })
+            var microgear = Microgear.create({
+                key: KEY,
+                secret: SECRET,
+                alias: ALIAS
+            })
+            microgear.on('connected', () => {
+                microgear.setAlias(ALIAS)
+                $('#connection').html('Connected to NETPIE')
+            })
+            microgear.on('present', event => {
+                console.log(event)
+            })
+            microgear.on('absent', event => {
+                console.log(event)
+            })
+            microgear.on('message', (topic, msg) => {
+                $('#data-co').html('Data : ' + msg)
+                $('#data-topic').html('Topic : ' + topic)
+                let CO = ''
+                for (x of msg.substr(4, 10)) {
+                    if (!isNaN(x)) CO += x
+                }
+                CO = parseInt(CO)
+                let bar = Math.floor((CO / thr) * 100)
+                if (bar >= 80) $('#alert-bar').addClass('bg-danger')
+                else $('#alert-bar').removeClass('bg-danger')
+                $('#alert-bar').css('width', bar + '%')
+                $('#label-bar').html('Threshold : ' + thr)
+                if (CO > thr) {
+                    $('#data-status').css('color', 'red')
+                    $('#data-status').html('Status : Please Avoid This Place!')
+                } else {
+                    $('#data-status').css('color', 'green')
+                    $('#data-status').html('Status : Normal :)')
+                }
+            })
+            microgear.resettoken(err => {
+                microgear.connect(APPID)
+            })
+        </script>
+    </body>
+</html>
